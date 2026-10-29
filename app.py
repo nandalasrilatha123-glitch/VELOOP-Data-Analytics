@@ -84,3 +84,27 @@ with tab3:
 
 st.markdown("---")
 st.caption("VELOOP Data Governance & Verification Register Framework | Active Development Day")
+
+# Add Data Export feature to Sidebar
+st.sidebar.markdown("---")
+st.sidebar.subheader("📥 Data Export")
+
+# Sample metrics summary data for export
+summary_data = pd.DataFrame({
+    "Metric": ["Total Verified Users", "Reward Credits Issued", "Payout Conversion Rate", "Flagged High-Risk Transactions"],
+    "Value": [1000, 154200, "4.2%", 3],
+    "Status": ["+12% vs last week", "+5.4%", "-0.3% (Healthy)", "-2 (Low Risk)"]
+})
+
+@st.cache_data
+def convert_df(df):
+    return df.to_csv(index=False).encode('utf-8')
+
+csv_data = convert_df(summary_data)
+
+st.sidebar.download_button(
+    label="Download Summary CSV",
+    data=csv_data,
+    file_name="veloop_analytics_summary.csv",
+    mime="text/csv",
+)
