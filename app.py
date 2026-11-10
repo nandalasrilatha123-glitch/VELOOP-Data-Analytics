@@ -18,13 +18,33 @@ data_summary = {
 }
 st.table(pd.DataFrame(data_summary))
 
-# 2. Calculated Product Analytics Engine
+# 2. Calculated Product Analytics Engine & Visualizations
 st.header("2. Core Calculated Product Metrics")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("DAU / MAU Ratio", "24.5%", "+1.2%")
 col2.metric("User Activation Rate", "68.2%", "+3.5%")
 col3.metric("Churn Risk Rate", "11.4%", "-0.8%")
 col4.metric("Reward Liability", "154,200 pts", "Est. $1,542")
+
+st.subheader("Active User Trends & Reward Activity")
+chart_col1, chart_col2 = st.columns(2)
+
+with chart_col1:
+    st.markdown("**Daily Active Users (DAU) - Last 7 Days**")
+    dau_data = pd.DataFrame({
+        "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "Active Users": [210, 235, 220, 245, 260, 280, 245]
+    }).set_index("Day")
+    st.line_chart(dau_data)
+
+with chart_col2:
+    st.markdown("**Reward Credits vs Redemptions (pts)**")
+    rewards_data = pd.DataFrame({
+        "Day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "Credited": [18000, 22000, 19500, 25000, 27000, 31000, 24000],
+        "Redeemed": [12000, 15000, 14000, 18000, 19000, 22000, 17000]
+    }).set_index("Day")
+    st.bar_chart(rewards_data)
 
 # 3. Field-Level Cross-Dataset Reconciliation
 st.header("3. Field-Level Cross-Dataset Verification")
