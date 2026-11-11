@@ -12,7 +12,6 @@ np.random.seed(42)
 n_users = 1000
 n_transactions = 5000
 
-# 1. User Ledger DataFrame
 user_df = pd.DataFrame({
     "user_id": [f"USR-{1000+i}" for i in range(n_users)],
     "signup_date": pd.date_range(start="2026-01-01", periods=n_users, freq="D"),
@@ -20,7 +19,6 @@ user_df = pd.DataFrame({
     "ledger_balance": np.random.randint(100, 15000, size=n_users)
 })
 
-# 2. Wallet Transactions DataFrame
 wallet_df = pd.DataFrame({
     "txn_id": [f"TXN-{20000+i}" for i in range(n_transactions)],
     "user_id": np.random.choice(user_df["user_id"], size=n_transactions),
@@ -28,6 +26,15 @@ wallet_df = pd.DataFrame({
     "txn_type": np.random.choice(["Earn", "Redeem", "Failed_Withdrawal"], size=n_transactions, p=[0.6, 0.3, 0.1]),
     "timestamp": pd.date_range(start="2026-10-01", periods=n_transactions, freq="min")
 })
+
+# --- SIDEBAR FILTER CONTROLS ---
+st.sidebar.header("Analytics Control Panel")
+selected_status = st.sidebar.selectbox("Filter Users by Status", ["All", "Active", "Churned", "Pending"])
+
+if selected_status != "All":
+    filtered_users = user_df[user_df["status"] == selected_status]
+else:
+    filtered_users = user_df
 
 
 # --- 1. DATASET PROFILING & QUALITY AUDIT ---
@@ -48,23 +55,27 @@ st.dataframe(pd.DataFrame(profiling_data), use_container_width=True)
 # --- 2. CALCULATED KPI METRICS ENGINE ---
 st.header("2. Core Calculated Product Metrics")
 
-total_liability = int(user_df["ledger_balance"].sum())
+total_liability = int(filtered_users["ledger_balance"].sum())
 active_count = len(user_df[user_df["status"] == "Active"])
 churn_count = len(user_df[user_df["status"] == "Churned"])
 churn_rate = (churn_count / n_users) * 100
-activation_rate = 68.5  # Calculated baseline from onboarding completion logs
+activation_rate = 68.5
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total Users", f"{n_users:,}")
+col1.metric("Filtered Users Count", f"{len(filtered_users):,}")
 col2.metric("User Activation Rate", f"{activation_rate}%", "+2.1% MoM")
 col3.metric("Calculated Churn Rate", f"{churn_rate:.1f}%", "-0.5% MoM")
-col4.metric("Total Reward Liability", f"{total_liability:,} pts", f"Est. ${total_liability*0.01:,.2f}")
+col4.metric("Reward Liability (Filtered)", f"{total_liability:,} pts", f"Est. ${total_liability*0.01:,.2f}")
+
+# Visual Chart Addition
+st.subheader("Visual Analytics: Ledger Balance Distribution")
+st.bar_chart(filtered_users.set_index("user_id")["ledger_balance"].head(30))
 
 
 # --- 3. CROSS-DATASET RECONCILIATION & MISMATCHES ---
 st.header("3. Field-Level Cross-Dataset Reconciliation & Validation")
 aggregated_wallet = wallet_df.groupby("user_id")["points_earned"].sum().reset_index()
-merged_recon = pd.merge(user_df[["user_id", "ledger_balance"]], aggregated_wallet, on="user_id", how="left").fillna(0)
+merged_recon = pd.merge(filtered_users[["user_id", "ledger_balance"]], aggregated_wallet, on="user_id", how="left").fillna(0)
 merged_recon["calculated_diff"] = merged_recon["ledger_balance"] - (merged_recon["points_earned"] * 0.1)
 merged_recon["Reconciliation Status"] = np.where(abs(merged_recon["calculated_diff"]) > 1000, "MISMATCH DETECTED", "Matched")
 
@@ -76,9 +87,7 @@ st.write(f"**Reconciliation Summary:** Checked {len(merged_recon)} records. Foun
 
 # --- 4. RISK THRESHOLD METHODOLOGY & SQL/PYTHON LOGIC ---
 st.header("4. Risk Threshold Business Logic & Execution")
-st.markdown("""
-To justify our risk thresholds analytically, we execute a rolling-window aggregation query to flag suspicious velocity:
-""")
+st.markdown("To justify our risk thresholds analytically, we execute a rolling-window aggregation query to flag suspicious velocity:")
 
 st.code("""
 # Python / Pandas Risk Engine Logic:
@@ -102,8 +111,8 @@ st.markdown("""
 st.sidebar.header("Data Export")
 csv = merged_recon.to_csv(index=False).encode('utf-8')
 st.sidebar.download_button(
-    label="Download Full Reconciliation CSV",
+    label="Download Filtered Audit CSV",
     data=csv,
-    file_name="veloop_full_reconciliation_audit.csv",
+    file_name="veloop_filtered_audit.csv",
     mime="text/csv"
 )
