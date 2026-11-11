@@ -15,18 +15,18 @@ n_transactions = 5000
 # 1. User Ledger DataFrame
 user_df = pd.DataFrame({
     "user_id": [f"USR-{1000+i}" for i in range(n_users)],
-    "signup_date": pd.date_range(start="2026-01-01", periods=n_users, freq="H"),
-    "status": np.choice(["Active", "Churned", "Pending"], size=n_users, p=[0.7, 0.2, 0.1]),
+    "signup_date": pd.date_range(start="2026-01-01", periods=n_users, freq="D"),
+    "status": np.random.choice(["Active", "Churned", "Pending"], size=n_users, p=[0.7, 0.2, 0.1]),
     "ledger_balance": np.random.randint(100, 15000, size=n_users)
 })
 
 # 2. Wallet Transactions DataFrame
 wallet_df = pd.DataFrame({
     "txn_id": [f"TXN-{20000+i}" for i in range(n_transactions)],
-    "user_id": np.choice(user_df["user_id"], size=n_transactions),
+    "user_id": np.random.choice(user_df["user_id"], size=n_transactions),
     "points_earned": np.random.randint(10, 1000, size=n_transactions),
-    "txn_type": np.choice(["Earn", "Redeem", "Failed_Withdrawal"], size=n_transactions, p=[0.6, 0.3, 0.1]),
-    "timestamp": pd.date_range(start="2026-10-01", periods=n_transactions, freq="T")
+    "txn_type": np.random.choice(["Earn", "Redeem", "Failed_Withdrawal"], size=n_transactions, p=[0.6, 0.3, 0.1]),
+    "timestamp": pd.date_range(start="2026-10-01", periods=n_transactions, freq="min")
 })
 
 
@@ -63,10 +63,9 @@ col4.metric("Total Reward Liability", f"{total_liability:,} pts", f"Est. ${total
 
 # --- 3. CROSS-DATASET RECONCILIATION & MISMATCHES ---
 st.header("3. Field-Level Cross-Dataset Reconciliation & Validation")
-# Merging user ledger with aggregated wallet transactions to find discrepancies
 aggregated_wallet = wallet_df.groupby("user_id")["points_earned"].sum().reset_index()
 merged_recon = pd.merge(user_df[["user_id", "ledger_balance"]], aggregated_wallet, on="user_id", how="left").fillna(0)
-merged_recon["calculated_diff"] = merged_recon["ledger_balance"] - (merged_recon["points_earned"] * 0.1) # Simulated mismatch rule
+merged_recon["calculated_diff"] = merged_recon["ledger_balance"] - (merged_recon["points_earned"] * 0.1)
 merged_recon["Reconciliation Status"] = np.where(abs(merged_recon["calculated_diff"]) > 1000, "MISMATCH DETECTED", "Matched")
 
 st.dataframe(merged_recon.head(10), use_container_width=True)
@@ -81,7 +80,6 @@ st.markdown("""
 To justify our risk thresholds analytically, we execute a rolling-window aggregation query to flag suspicious velocity:
 """)
 
-# Code snippet display for proof of execution
 st.code("""
 # Python / Pandas Risk Engine Logic:
 high_risk_users = wallet_df[
@@ -97,7 +95,7 @@ st.info(f"**Analytical Finding:** Executing the risk rule identified **{len(wall
 st.header("5. Data Limitations & Actionable Recommendations")
 st.markdown("""
 - **Missing Telemetry:** Absence of real-time IP geolocation logs restricts our fraud prevention models to device-level heuristics.
-- **Recommendation:** Implement automated webhook syncs between the reward gateway and PostgreSQL ledger to eliminate the 500-point discrepancy drifts identified in Section 3.
+- **Recommendation:** Implement automated webhook syncs between the reward gateway and PostgreSQL ledger to eliminate the discrepancy drifts identified in Section 3.
 """)
 
 # Sidebar Export
